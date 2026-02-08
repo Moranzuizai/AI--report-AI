@@ -8,28 +8,21 @@ import streamlit.components.v1 as components
 import qianfan  # 百度千帆SDK
 
 # ==========================================
-# 0. 全局配置与文件路径
+# 0. 全局配置加载 (必须放在最前面)
 # ==========================================
-st.set_page_config(page_title="AI课堂周报生成器", page_icon="📊", layout="wide")
-
+CONFIG_FILE = "config.json"
 LOG_FILE = "access_log.csv"
 FEEDBACK_FILE = "feedback_log.csv"
-CONFIG_FILE = "config.json"
-
-# ==========================================
-# 1. 核心工具函数 (配置、日志)
-# ==========================================
 
 def load_config():
-    """读取配置文件 (如果不存在则创建默认)"""
+    """读取配置文件"""
     default_config = {
         "admin_password": "199266", 
         "user_password": "123456",
-        # 百度文心配置
         "baidu_api_key": "",
         "baidu_secret_key": "",
-        # 上传提示语配置
-        "upload_hint": "⬆️ BI平台下载 - 班级数据（分学科）原文件导入即可" 
+        "upload_hint": "⬆️ BI平台下载 - 班级数据（分学科）原文件导入即可",
+        "app_title": "AI课堂教学数据分析工具"  # [新增] 软件名称
     }
     
     if not os.path.exists(CONFIG_FILE):
@@ -39,7 +32,7 @@ def load_config():
     
     with open(CONFIG_FILE, 'r') as f:
         config = json.load(f)
-        # 自动补全旧版本配置文件缺少的字段
+        # 自动补全缺失字段
         for k, v in default_config.items():
             if k not in config:
                 config[k] = v
@@ -49,6 +42,19 @@ def save_config(config):
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f)
 
+# 加载配置
+current_config = load_config()
+
+# 设置页面 (使用配置中的标题)
+st.set_page_config(
+    page_title=current_config["app_title"], 
+    page_icon="📊", 
+    layout="wide"
+)
+
+# ==========================================
+# 1. 核心工具函数
+# ==========================================
 def get_remote_ip():
     try:
         from streamlit.web.server.websocket_headers import _get_websocket_headers
@@ -74,45 +80,50 @@ def save_feedback(rating, comment):
     pd.DataFrame([{"时间": now_time, "评价": rating, "建议": comment}]).to_csv(FEEDBACK_FILE, mode='a', header=False, index=False)
 
 # ==========================================
-# 2. [独立模块] AI 调用接口 (百度文心版)
+# 2. [修复版] AI 调用接口 (百度文心)
 # ==========================================
 def call_ai_service(messages):
     """
-    统一的 AI 调用接口。
-    如果以后要换 AI，只需要修改这个函数内部的逻辑，
-    不需要改动其他几百行代码。
+    百度文心一言调用 - 增强除错版
     """
     cfg = load_config()
-    ak = cfg.get("baidu_api_key", "")
-    sk = cfg.get("baidu_secret_key", "")
+    ak = cfg.get("baidu_api_key", "").strip()
+    sk = cfg.get("baidu_secret_key", "").strip()
     
     if not ak or not sk:
-        return "⚠️ 请联系管理员在后台配置百度 API Key 和 Secret Key。"
+        return "⚠️ 未配置百度 API Key，请联系管理员在后台设置。"
+    
+    # [修复] 使用环境变量方式注入，兼容性更好
+    os.environ["QIANFAN_AK"] = ak
+    os.environ["QIANFAN_SK"] = sk
     
     try:
-        # 初始化百度千帆客户端
-        chat_comp = qianfan.ChatCompletion(ak=ak, sk=sk)
+        # 实例化客户端
+        chat_comp = qianfan.ChatCompletion()
         
-        # 转换消息格式 (Streamlit 格式转百度格式)
-        # Streamlit: [{"role": "user", "content": "..."}]
-        # 百度主要识别 role: user/assistant
-        
+        # 发起请求
+        # 注意：这里使用 'ERNIE-Speed-8K'，这是百度目前最稳定且通常免费的模型
+        # 如果报错 "IAM certification failed"，请检查 AK/SK 是否复制正确
+        # 如果报错 "No permission"，请去百度云控制台开通 ERNIE-Speed 模型的权限
         resp = chat_comp.do(
-            model="ERNIE-Speed-128K", # 这里指定使用免费/高速模型，也可以改为 "ERNIE-4.0-8K" (收费)
+            model="ERNIE-Speed-8K", 
             messages=messages
         )
         
-        return resp["body"]["result"]
-        
+        # 检查返回结果
+        if "body" in resp and "result" in resp["body"]:
+            return resp["body"]["result"]
+        else:
+            return f"API 返回异常: {str(resp)}"
+            
     except Exception as e:
-        return f"AI 调用失败: {str(e)}"
+        return f"❌ AI 调用报错: {str(e)}\n(请检查：1.AK/SK是否正确; 2.是否在百度云开通了 ERNIE-Speed-8K 模型)"
 
 # ==========================================
-# 3. 权限控制逻辑
+# 3. 权限控制
 # ==========================================
-config = load_config()
-ADMIN_PWD = config.get("admin_password", "199266")
-USER_PWD = config.get("user_password", "123456")
+ADMIN_PWD = current_config.get("admin_password", "199266")
+USER_PWD = current_config.get("user_password", "123456")
 
 def check_auth():
     password = st.sidebar.text_input("🔒 请输入访问密码", type="password")
@@ -128,10 +139,11 @@ auth_status = check_auth()
 
 if auth_status == 0:
     st.warning("⚠️ 请在左侧输入密码以访问系统。")
+    st.info("提示：输入普通密码进入功能，输入管理员密码进入后台。")
     st.stop()
 
 # ==========================================
-# 4. 管理员后台 (含提示语修改)
+# 4. 管理员后台
 # ==========================================
 if auth_status == 2:
     st.sidebar.success("🔑 管理员")
@@ -150,39 +162,40 @@ if auth_status == 2:
             st.dataframe(df, use_container_width=True)
     with tab3:
         st.subheader("系统参数配置")
-        
         with st.form("sys_config"):
+            # [新增] 软件名称修改
+            new_title = st.text_input("🏠 软件名称 (网页标题)", value=current_config.get("app_title"))
+            
             c1, c2 = st.columns(2)
             with c1:
                 new_u_pwd = st.text_input("普通密码", value=USER_PWD)
                 new_a_pwd = st.text_input("管理员密码", value=ADMIN_PWD)
             with c2:
-                # 百度配置
-                new_ak = st.text_input("百度 API Key", value=config.get("baidu_api_key",""))
-                new_sk = st.text_input("百度 Secret Key", value=config.get("baidu_secret_key",""), type="password")
+                new_ak = st.text_input("百度 API Key", value=current_config.get("baidu_api_key",""))
+                new_sk = st.text_input("百度 Secret Key", value=current_config.get("baidu_secret_key",""), type="password")
             
             st.markdown("---")
-            # [新增] 提示语修改入口
-            new_hint = st.text_input("📂 上传区域提示语 (即箭头旁边的文字)", value=config.get("upload_hint", ""))
+            new_hint = st.text_input("📂 上传提示语", value=current_config.get("upload_hint", ""))
             
             if st.form_submit_button("💾 保存所有配置"):
-                config.update({
+                current_config.update({
+                    "app_title": new_title,
                     "user_password": new_u_pwd,
                     "admin_password": new_a_pwd,
                     "baidu_api_key": new_ak,
                     "baidu_secret_key": new_sk,
                     "upload_hint": new_hint
                 })
-                save_config(config)
-                st.success("配置已更新！")
+                save_config(current_config)
+                st.success("配置已更新！请刷新页面查看标题变化。")
     st.stop()
 
 # ==========================================
 # 5. 普通用户界面
 # ==========================================
-st.title("📊 AI课堂教学数据分析工具")
+st.title(current_config["app_title"])  # 使用配置的标题
 
-# --- 辅助函数 (保持精简) ---
+# --- 辅助函数 ---
 def natural_sort_key(s):
     s = str(s)
     for k, v in {'七':'07','八':'08','九':'09','高一':'10','高二':'11','高三':'12'}.items():
@@ -209,11 +222,9 @@ def get_trend_html(curr, prev, is_pct=False):
     return f'<span style="color:{c};font-weight:bold;">{s} {v}</span>'
 
 # --- 界面交互 ---
-# [读取配置] 获取最新的提示语
-upload_hint_text = config.get("upload_hint", "⬆️ BI平台下载 - 班级数据（分学科）原文件导入即可")
-
+upload_hint_text = current_config.get("upload_hint", "⬆️ BI平台下载 - 班级数据（分学科）原文件导入即可")
 uploaded_file = st.file_uploader("上传文件", type=['xlsx', 'xls', 'csv'])
-st.caption(upload_hint_text) # 使用配置的变量
+st.caption(upload_hint_text)
 
 if uploaded_file:
     try:
@@ -227,7 +238,6 @@ if uploaded_file:
         # --- 数据清洗 ---
         df = df.fillna(0)
         cols = {}
-        # 智能列名映射
         if '周' in df.columns: cols['t'] = '周'
         else: cols['t'] = df.columns[0]
         
@@ -239,14 +249,12 @@ if uploaded_file:
             elif '班级' in c: cols['cls'] = c
             elif '学科' in c: cols['s'] = c
             
-        # 兜底
         cols.setdefault('cls', '班级名称'); cols.setdefault('h', '课时数')
         cols.setdefault('a', '课时平均出勤率'); cols.setdefault('c', '题目正确率')
 
         for k in ['a','c','m']: 
             if k in cols and cols[k] in df.columns: df[cols[k]] = df[cols[k]].apply(clean_percentage)
             
-        # 时间切分
         t_col = cols['t']
         df = df[df[t_col].astype(str) != '合计']
         periods = sorted([str(x) for x in df[t_col].unique()], key=natural_sort_key)
@@ -260,7 +268,6 @@ if uploaded_file:
         df_pre = df[df[t_col].astype(str)==pre_w].copy() if pre_w else None
         df_cur['G'] = df_cur[cols['cls']].apply(get_grade)
         
-        # 指标计算
         def get_m(d): 
             if d is None or d.empty: return None
             return {'h':int(d[cols['h']].sum()), 'a':weighted_avg(d,cols['a'],cols['h']), 'c':weighted_avg(d,cols['c'],cols['h'])}
@@ -268,14 +275,12 @@ if uploaded_file:
         m_cur = get_m(df_cur)
         m_pre = get_m(df_pre)
         
-        # 趋势
         th, ta, tc = "", "", ""
         if m_pre:
             th = get_trend_html(m_cur['h'], m_pre['h'])
             ta = get_trend_html(m_cur['a'], m_pre['a'], True)
             tc = get_trend_html(m_cur['c'], m_pre['c'], True)
             
-        # 班级详情
         cls_stats = df_cur.groupby(['G', cols['cls']]).apply(lambda x: pd.Series({
             'h': int(x[cols['h']].sum()),
             'a': weighted_avg(x, cols['a'], cols['h']),
@@ -287,7 +292,6 @@ if uploaded_file:
         cls_stats['key'] = cls_stats.apply(lambda r: (natural_sort_key(r['G']), natural_sort_key(r[cols['cls']])), axis=1)
         cls_stats = cls_stats.sort_values('key')
         
-        # 标杆
         best = cls_stats.sort_values(['h','c'], ascending=False).iloc[0]
         focus = cls_stats[(cls_stats['a']>m_cur['a']) & (cls_stats['c']<m_cur['c'])]
         focus_row = focus.iloc[0] if not focus.empty else None
@@ -297,7 +301,6 @@ if uploaded_file:
         if focus_row is not None:
             focus_html = f'<div class="highlight-box warning-box">⚠️ <strong>重点关注：{focus_row[cols["cls"]]}</strong> (出勤:{focus_row["a"]*100:.1f}% 正常，但正确率 {focus_row["c"]*100:.1f}% 偏低)</div>'
 
-        # 生成表格HTML
         tbl_html = ""
         for g in sorted(cls_stats['G'].unique(), key=natural_sort_key):
             sub = cls_stats[cls_stats['G']==g].sort_values(['h','c'], ascending=False)
@@ -308,14 +311,12 @@ if uploaded_file:
                 tbl_html += f"<tr><td><b>{r[cols['cls']]}</b></td><td style='color:#999;font-size:12px'>{r['s']}</td><td>{r['h']}</td><td class='{ca}'>{r['a']*100:.1f}%</td><td>{r['m']*100:.1f}%</td><td class='{cc}'>{r['c']*100:.1f}%</td></tr>"
             tbl_html += "</tbody></table>"
 
-        # 历史数据
         hist = df.groupby(t_col).apply(lambda x: pd.Series({
             'h':int(x[cols['h']].sum()), 'a':weighted_avg(x,cols['a'],cols['h']), 'c':weighted_avg(x,cols['c'],cols['h'])
         })).reset_index()
         hist['sk'] = hist[t_col].apply(lambda x: natural_sort_key(str(x)))
         hist = hist.sort_values('sk')
         
-        # 准备JSON数据
         js_cls = json.dumps([str(x) for x in cls_stats[cols['cls']].tolist()], ensure_ascii=False)
         js_h = json.dumps(cls_stats['h'].tolist())
         js_a = json.dumps([round(x*100,1) for x in cls_stats['a'].tolist()])
@@ -331,7 +332,6 @@ if uploaded_file:
         st.subheader("🤖 AI 教学反馈 (文心一言)")
         
         if 'ai_summary' not in st.session_state:
-            # 初始 Prompt
             prompt = f"""
             周期：{cur_w}。全校数据：总课时{m_cur['h']}，平均出勤{m_cur['a']*100:.1f}%，正确率{m_cur['c']*100:.1f}%。
             标杆：{best[cols["cls"]]}。关注：{focus_row[cols["cls"]] if focus_row is not None else "无"}。
@@ -351,7 +351,7 @@ if uploaded_file:
             if ui := st.chat_input("输入修改意见..."):
                 st.session_state['ai_msg'].append({"role": "user", "content": ui})
                 with st.chat_message("user"): st.write(ui)
-                with st.spinner("..."):
+                with st.spinner("AI重写中..."):
                     r = call_ai_service(st.session_state['ai_msg'])
                     st.session_state['ai_msg'].append({"role": "assistant", "content": r})
                     st.session_state['ai_summary'] = r
@@ -360,7 +360,6 @@ if uploaded_file:
             st.markdown("**最终确认文案：**")
             final_txt = st.text_area("编辑确认", value=st.session_state['ai_summary'], height=300)
 
-        # --- HTML生成 ---
         html = f"""
         <!DOCTYPE html><html><head><meta charset="UTF-8">
         <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
