@@ -1,0 +1,212 @@
+{
+  "file_info": {
+    "file_name": "耀襄全周期.xlsx",
+    "total_records": 803,
+    "date_range": {
+      "start": "2025-09-07",
+      "end": "2026-01-18"
+    }
+  },
+  "current_week": {
+    "date": "2026-01-18",
+    "metrics": {
+      "total_hours": 128,
+      "total_classes": 15,
+      "total_subjects": 9,
+      "total_records": 63,
+      "attendance_rate": 0.6474867187500001,
+      "micro_completion_rate": 0.39676562500000007,
+      "correctness_rate": 0.2613109375
+    },
+    "class_stats_count": 15,
+    "subject_stats_count": 9
+  },
+  "best_class": {
+    "name": "2024级10班",
+    "hours": 12,
+    "attendance_rate": 0.8028166666666667,
+    "correctness_rate": 0.6316916666666667,
+    "subjects": "化学, 生物, 英语, 语文"
+  },
+  "focus_class": {
+    "name": "2024级1班",
+    "attendance_rate": 0.7766399999999999,
+    "correctness_rate": 0.0,
+    "subjects": "历史, 英语, 语文"
+  },
+  "top_subjects": [
+    {
+      "课时学科": "英语",
+      "总课时": 41.0,
+      "平均题目正确率": 0.27398780487804875,
+      "涉及班级数": 13.0
+    },
+    {
+      "课时学科": "化学",
+      "总课时": 19.0,
+      "平均题目正确率": 0.4850157894736842,
+      "涉及班级数": 10.0
+    },
+    {
+      "课时学科": "语文",
+      "总课时": 18.0,
+      "平均题目正确率": 0.0,
+      "涉及班级数": 10.0
+    },
+    {
+      "课时学科": "数学",
+      "总课时": 17.0,
+      "平均题目正确率": 0.4353470588235294,
+      "涉及班级数": 8.0
+    },
+    {
+      "课时学科": "历史",
+      "总课时": 13.0,
+      "平均题目正确率": 0.17796923076923077,
+      "涉及班级数": 7.0
+    }
+  ],
+  "weekly_trends": [
+    {
+      "week": "2025-09-07",
+      "total_hours": 31,
+      "attendance_rate": 0.6432451612903226,
+      "correctness_rate": 0.36303870967741936,
+      "class_count": 9
+    },
+    {
+      "week": "2025-09-14",
+      "total_hours": 30,
+      "attendance_rate": 0.7122066666666667,
+      "correctness_rate": 0.19878,
+      "class_count": 9
+    },
+    {
+      "week": "2025-09-21",
+      "total_hours": 135,
+      "attendance_rate": 0.6828866666666665,
+      "correctness_rate": 0.384497037037037,
+      "class_count": 10
+    },
+    {
+      "week": "2025-09-28",
+      "total_hours": 75,
+      "attendance_rate": 0.6911226666666667,
+      "correctness_rate": 0.31988133333333335,
+      "class_count": 11
+    },
+    {
+      "week": "2025-10-05",
+      "total_hours": 21,
+      "attendance_rate": 0.6457857142857143,
+      "correctness_rate": 0.24686190476190475,
+      "class_count": 8
+    },
+    {
+      "week": "2025-10-12",
+      "total_hours": 58,
+      "attendance_rate": 0.5967413793103449,
+      "correctness_rate": 0.31375862068965515,
+      "class_count": 9
+    },
+    {
+      "week": "2025-10-19",
+      "total_hours": 34,
+      "attendance_rate": 0.6579088235294117,
+      "correctness_rate": 0.3275617647058824,
+      "class_count": 9
+    },
+    {
+      "week": "2025-10-26",
+      "total_hours": 67,
+      "attendance_rate": 0.5509074626865672,
+      "correctness_rate": 0.24001641791044775,
+      "class_count": 13
+    },
+    {
+      "week": "2025-11-02",
+      "total_hours": 48,
+      "attendance_rate": 0.49111250000000006,
+      "correctness_rate": 0.40846249999999995,
+      "class_count": 10
+    },
+    {
+      "week": "2025-11-09",
+      "total_hours": 117,
+      "attendance_rate": 0.5585769230769231,
+      "correctness_rate": 0.36728119658119657,
+      "class_count": 12
+    },
+    {
+      "week": "2025-11-16",
+      "total_hours": 117,
+      "attendance_rate": 0.6657547008547009,
+      "correctness_rate": 0.20515384615384616,
+      "class_count": 10
+    },
+    {
+      "week": "2025-11-23",
+      "total_hours": 66,
+      "attendance_rate": 0.6084469696969695,
+      "correctness_rate": 0.11408181818181817,
+      "class_count": 14
+    },
+    {
+      "week": "2025-11-30",
+      "total_hours": 109,
+      "attendance_rate": 0.6834211009174311,
+      "correctness_rate": 0.3924816513761468,
+      "class_count": 15
+    },
+    {
+      "week": "2025-12-07",
+      "total_hours": 143,
+      "attendance_rate": 0.5877552447552448,
+      "correctness_rate": 0.3142594405594406,
+      "class_count": 15
+    },
+    {
+      "week": "2025-12-14",
+      "total_hours": 103,
+      "attendance_rate": 0.6148398058252428,
+      "correctness_rate": 0.3434398058252427,
+      "class_count": 15
+    },
+    {
+      "week": "2025-12-21",
+      "total_hours": 159,
+      "attendance_rate": 0.6169075471698113,
+      "correctness_rate": 0.24628742138364781,
+      "class_count": 15
+    },
+    {
+      "week": "2025-12-28",
+      "total_hours": 148,
+      "attendance_rate": 0.6459804054054054,
+      "correctness_rate": 0.2297222972972973,
+      "class_count": 15
+    },
+    {
+      "week": "2026-01-04",
+      "total_hours": 92,
+      "attendance_rate": 0.6305489130434783,
+      "correctness_rate": 0.26857500000000006,
+      "class_count": 14
+    },
+    {
+      "week": "2026-01-11",
+      "total_hours": 166,
+      "attendance_rate": 0.6593012048192771,
+      "correctness_rate": 0.25764156626506024,
+      "class_count": 15
+    },
+    {
+      "week": "2026-01-18",
+      "total_hours": 128,
+      "attendance_rate": 0.6474867187500001,
+      "correctness_rate": 0.2613109375,
+      "class_count": 15
+    }
+  ],
+  "analysis_time": "2026-02-09 00:05:20"
+}
